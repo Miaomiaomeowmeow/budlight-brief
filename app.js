@@ -128,7 +128,12 @@
       const when = document.createElement("span"); when.textContent = n.ts ? new Date(n.ts).toLocaleString() : ""; meta.append(when);
       if (n.uid === me) {
         const d = document.createElement("button"); d.type = "button"; d.className = "del"; d.textContent = t("del");
-        d.addEventListener("click", e => { e.stopPropagation(); if (confirm(t("delAsk"))) store.remove(n.id); });
+        d.addEventListener("click", e => {
+          e.stopPropagation();
+          // two-step in-page confirm: native confirm() is blocked in some browsers and in-app views
+          if (!d.classList.contains("sure")) { d.classList.add("sure"); d.textContent = t("delAsk"); setTimeout(() => { d.classList.remove("sure"); d.textContent = t("del"); }, 4000); return; }
+          d.disabled = true; store.remove(n.id).catch(() => { d.disabled = false; alert(t("saveErr")); });
+        });
         meta.append(d);
       }
       body.append(meta); s.append(chip, body); host.append(s);
