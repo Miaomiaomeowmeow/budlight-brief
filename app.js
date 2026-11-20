@@ -239,6 +239,13 @@
   }
   const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+  // in-page links like href="#dropped" jump to that chapter in the current language
+  document.addEventListener("click", e => {
+    const a = e.target.closest('main a[href^="#"]'); if (!a) return;
+    const h = active().querySelector(`h2[data-sec="${a.getAttribute("href").slice(1)}"]`); if (!h) return;
+    e.preventDefault(); h.scrollIntoView({ behavior: "smooth" }); history.replaceState(null, "", a.getAttribute("href"));
+  });
+
   // ---------- start ----------
   const want = ls.get("brief-lang") || (navigator.language || "en").slice(0, 2);
   setLang(codes.includes(want) ? want : codes[0], false);
