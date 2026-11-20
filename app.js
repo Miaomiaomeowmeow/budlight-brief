@@ -1,9 +1,9 @@
 // Team brief: section nav, language switch, shared sticky notes.
 (() => {
   const UI = {
-    en: { add: "Add a note", place: "Tap where you want to stick it", cancel: "Cancel", name: "Your name", nameHint: "So the team knows who wrote it", next: "Next", note: "Your note", save: "Stick it", del: "Delete", delAsk: "Delete this note?", saveErr: "Couldn't save. Check your connection and try again." },
-    zh: { add: "贴个标签", place: "点一下你想贴的位置", cancel: "取消", name: "你的名字", nameHint: "让大家知道是谁写的", next: "下一步", note: "写下你的想法", save: "贴上去", del: "删除", delAsk: "删除这个标签？", saveErr: "没存上，检查一下网络再试。" },
-    ru: { add: "Добавить заметку", place: "Нажмите туда, где хотите оставить заметку", cancel: "Отмена", name: "Ваше имя", nameHint: "Чтобы команда знала, кто написал", next: "Далее", note: "Ваша заметка", save: "Прикрепить", del: "Удалить", delAsk: "Удалить эту заметку?", saveErr: "Не удалось сохранить. Проверьте соединение и попробуйте ещё раз." },
+    en: { moveHint: "Drag to move your note", drag: "Drag me anywhere to stick a note", tapHint: "or tap me", add: "Add a note", place: "Tap where you want to stick it", cancel: "Cancel", name: "Your name", nameHint: "So the team knows who wrote it", next: "Next", note: "Your note", save: "Stick it", del: "Delete", delAsk: "Delete this note?", saveErr: "Couldn't save. Check your connection and try again." },
+    zh: { moveHint: "拖动可以移动你的便签", drag: "把我拖到任何地方，贴上你的想法", tapHint: "或者点我一下", add: "贴个标签", place: "点一下你想贴的位置", cancel: "取消", name: "你的名字", nameHint: "让大家知道是谁写的", next: "下一步", note: "写下你的想法", save: "贴上去", del: "删除", delAsk: "删除这个标签？", saveErr: "没存上，检查一下网络再试。" },
+    ru: { moveHint: "Перетащите, чтобы переместить заметку", drag: "Перетащите меня куда угодно, чтобы оставить заметку", tapHint: "или нажмите на меня", add: "Добавить заметку", place: "Нажмите туда, где хотите оставить заметку", cancel: "Отмена", name: "Ваше имя", nameHint: "Чтобы команда знала, кто написал", next: "Далее", note: "Ваша заметка", save: "Прикрепить", del: "Удалить", delAsk: "Удалить эту заметку?", saveErr: "Не удалось сохранить. Проверьте соединение и попробуйте ещё раз." },
   };
   const LANG_NAMES = { en: "EN", zh: "中文", ru: "RU", hi: "हिं", ta: "தமிழ்", bn: "বাং", te: "తెలు", mr: "मरा", kk: "ҚАЗ" };
   const PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>';
@@ -91,12 +91,14 @@
       },
       async add(n) { const { fs, db } = await ready; await fs.addDoc(fs.collection(db, "notes"), n); },
       async remove(id) { const { fs, db } = await ready; await fs.deleteDoc(fs.doc(db, "notes", id)); },
+      async move(id, p) { const { fs, db } = await ready; await fs.updateDoc(fs.doc(db, "notes", id), { block: p.block, x: p.x, y: p.y }); },
     };
   };
   const store = window.FIREBASE_CONFIG ? fbStore(window.FIREBASE_CONFIG) : {
     subscribe(cb) { const read = () => { try { cb(JSON.parse(ls.get("brief-notes") || "[]")); } catch { cb([]); } }; read(); addEventListener("storage", read); },
     async add(n) { const all = JSON.parse(ls.get("brief-notes") || "[]"); all.push({ ...n, id: Math.random().toString(36).slice(2) }); ls.set("brief-notes", JSON.stringify(all)); dispatchEvent(new Event("storage")); },
     async remove(id) { const all = JSON.parse(ls.get("brief-notes") || "[]").filter(n => n.id !== id); ls.set("brief-notes", JSON.stringify(all)); dispatchEvent(new Event("storage")); },
+    async move(id, p) { const all = JSON.parse(ls.get("brief-notes") || "[]").map(n => n.id === id ? { ...n, block: p.block, x: p.x, y: p.y } : n); ls.set("brief-notes", JSON.stringify(all)); dispatchEvent(new Event("storage")); },
   };
 
   // stable block keys: same structure in every language
@@ -115,7 +117,12 @@
       const chip = document.createElement("button");
       chip.type = "button"; chip.className = "chip"; chip.innerHTML = PIN;
       chip.append(document.createTextNode(n.name || "?"));
-      chip.addEventListener("click", e => { e.stopPropagation(); const o = s.classList.contains("open"); document.querySelectorAll(".stick.open").forEach(x => x.classList.remove("open")); s.classList.toggle("open", !o); });
+      const toggle = () => { const o = s.classList.contains("open"); document.querySelectorAll(".stick.open").forEach(x => x.classList.remove("open")); s.classList.toggle("open", !o); };
+      if (n.uid === me) {
+        chip.classList.add("mine"); chip.title = t("moveHint");
+        chip.addEventListener("pointerdown", e => dragFrom(e, () => chip.cloneNode(true), spot => store.move(n.id, spot).catch(() => alert(t("saveErr"))), toggle));
+        chip.addEventListener("click", e => e.stopPropagation());
+      } else chip.addEventListener("click", e => { e.stopPropagation(); toggle(); });
       const body = document.createElement("div"); body.className = "body"; body.textContent = n.text;
       const meta = document.createElement("div"); meta.className = "meta";
       const when = document.createElement("span"); when.textContent = n.ts ? new Date(n.ts).toLocaleString() : ""; meta.append(when);
@@ -132,16 +139,48 @@
   // ---------- adding a note ----------
   const fab = document.querySelector(".fab"), bar = document.querySelector(".place-bar");
   function renderUI() {
-    fab.querySelector("span").textContent = t("add");
+    fab.querySelector(".hint").textContent = t("drag");
+    fab.querySelector(".tap").textContent = t("tapHint");
+    fab.setAttribute("aria-label", t("add"));
     bar.querySelector("span").textContent = t("place");
     bar.querySelector("button").textContent = t("cancel");
   }
   let hover;
   function stopPlacing() { document.body.classList.remove("placing"); if (hover) hover.classList.remove("notable-hover"); hover = null; }
-  fab.addEventListener("click", () => {
-    if (ls.get("brief-name")) { document.body.classList.add("placing"); return; }
-    askName(() => document.body.classList.add("placing"));
-  });
+  const startPlacing = () => ls.get("brief-name") ? document.body.classList.add("placing") : askName(() => document.body.classList.add("placing"));
+  fab.addEventListener("pointerdown", e => dragFrom(e, () => { const g = document.createElement("div"); g.className = "pad-ghost"; g.innerHTML = PIN; return g; },
+    (spot, x, y) => ls.get("brief-name") ? writeNote(spot, x, y) : askName(() => writeNote(spot, x, y)), startPlacing));
+  fab.addEventListener("click", e => e.preventDefault());
+
+  // ---------- drag helper (mouse + touch) ----------
+  function spotAt(x, y) {
+    const el = document.elementFromPoint(x, y); if (!el) return null;
+    const main = el.closest(".lang main"); if (!main || main.closest(".lang").hidden) return null;
+    const blk = el.closest(BLOCKS); if (!blk || !main.contains(blk)) return null;
+    const r = blk.getBoundingClientRect();
+    return { el: blk, block: keyOf(blk), x: Math.min(.98, Math.max(0, (x - r.left) / r.width)), y: Math.round(y - r.top) };
+  }
+  function dragFrom(e, makeGhost, onDrop, onTap) {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    const sx = e.clientX, sy = e.clientY; let ghost = null, lit = null, px = sx, py = sy, timer = null;
+    const light = sp => { const b = sp && sp.el; if (b === lit) return; if (lit) lit.classList.remove("notable-hover"); lit = b; if (b) b.classList.add("notable-hover"); };
+    const move = ev => {
+      px = ev.clientX; py = ev.clientY;
+      if (!ghost) { if (Math.hypot(px - sx, py - sy) < 6) return; ghost = makeGhost(); ghost.classList.add("drag-ghost"); document.body.append(ghost); document.body.classList.add("dragging");
+        timer = setInterval(() => { if (py < 90) scrollBy(0, -14); else if (py > innerHeight - 50) scrollBy(0, 14); light(spotAt(px, py)); }, 16); }
+      ghost.style.left = px + "px"; ghost.style.top = py + "px";
+      light(spotAt(px, py));
+    };
+    const up = () => {
+      removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
+      clearInterval(timer); light(null);
+      if (!ghost) { onTap && onTap(); return; }
+      ghost.remove(); document.body.classList.remove("dragging");
+      const sp = spotAt(px, py); if (sp) onDrop({ block: sp.block, x: sp.x, y: sp.y }, px, py);
+    };
+    addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
+  }
   bar.querySelector("button").addEventListener("click", stopPlacing);
   addEventListener("keydown", e => { if (e.key === "Escape") { stopPlacing(); closePop(); } });
   document.addEventListener("mousemove", e => {

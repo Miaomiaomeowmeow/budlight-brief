@@ -141,6 +141,21 @@ body.placing .fab { display: none; }
 .stick .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px; opacity: .75; gap: 8px; }
 .stick .del { border: 0; background: transparent; color: #8a1c00; font: 600 11px/1 var(--body); cursor: pointer; padding: 2px; }
 .stick.right .body { left: auto; right: 0; }
+
+/* ---------- draggable note pad (overrides the round button) ---------- */
+.fab { flex-direction: column; align-items: flex-start; gap: 6px; width: 150px; padding: 12px 14px 14px; border-radius: 3px 3px 16px 3px; transform: rotate(-3deg); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; text-align: left; box-shadow: 0 10px 24px #0003, inset 0 -3px 0 #0000000f; transition: transform .2s, box-shadow .2s; }
+.fab:hover { transform: rotate(0deg) translateY(-3px); box-shadow: 0 14px 30px #0004; }
+.fab:active { cursor: grabbing; transform: rotate(0deg) scale(.97); }
+.fab svg { width: 18px; height: 18px; }
+.fab .hint { font: 700 14px/1.25 var(--body); }
+.fab .tap { font: 500 11px/1 var(--body); opacity: .65; }
+.pad-ghost { width: 64px; height: 64px; background: #ffd84d; color: #3a2c00; border-radius: 3px 3px 12px 3px; display: grid; place-items: center; }
+.pad-ghost svg { width: 24px; height: 24px; }
+.drag-ghost { position: fixed; z-index: 90; pointer-events: none; transform: translate(-50%, -50%) rotate(4deg); box-shadow: 0 12px 28px #0005; opacity: .95; }
+body.dragging, body.dragging * { cursor: grabbing !important; user-select: none !important; }
+body.dragging main .notable-hover { outline: 2px dashed #e0b400; outline-offset: 3px; border-radius: 4px; }
+.stick .chip.mine { cursor: grab; touch-action: none; }
+@media (max-width: 620px) { .fab { width: 120px; padding: 10px 12px; } .fab .hint { font-size: 12px; } }
 </style>
 </head>
 <body>
@@ -1421,9 +1436,9 @@ body.placing .fab { display: none; }
 </div>
 
 
-<button class="fab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg><span></span></button>
+<button class="fab" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg><span class="hint"></span><span class="tap"></span></button>
 <div class="place-bar" role="status"><span></span><button type="button"></button></div>
-<script src="notes-config.js?v=1795141396"></script>
-<script src="app.js?v=1795141396"></script>
+<script src="notes-config.js?v=1795154400"></script>
+<script src="app.js?v=1795154400"></script>
 </body>
 </html>
