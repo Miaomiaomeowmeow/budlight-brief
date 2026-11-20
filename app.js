@@ -105,6 +105,8 @@
   const blocksOf = l => [...l.querySelectorAll("main")].flatMap(m => [...m.querySelectorAll(BLOCKS)]);
   const keyOf = el => blocksOf(active()).indexOf(el);
 
+  // author = same browser id, or same name (so you can still edit after switching browser / device)
+  const isMine = n => n.uid === me || (!!ls.get("brief-name") && (n.name || "").trim().toLowerCase() === ls.get("brief-name").trim().toLowerCase());
   function renderNotes() {
     document.querySelectorAll(".stick").forEach(s => s.remove());
     const list = blocksOf(active());
@@ -118,7 +120,7 @@
       chip.type = "button"; chip.className = "chip"; chip.innerHTML = PIN;
       chip.append(document.createTextNode(n.name || "?"));
       const toggle = () => { const o = s.classList.contains("open"); document.querySelectorAll(".stick.open").forEach(x => x.classList.remove("open")); s.classList.toggle("open", !o); };
-      if (n.uid === me) {
+      if (isMine(n)) {
         chip.classList.add("mine"); chip.title = t("moveHint");
         chip.addEventListener("pointerdown", e => dragFrom(e, () => chip.cloneNode(true), spot => store.move(n.id, spot).catch(() => alert(t("saveErr"))), toggle));
         chip.addEventListener("click", e => e.stopPropagation());
@@ -126,7 +128,7 @@
       const body = document.createElement("div"); body.className = "body"; body.textContent = n.text;
       const meta = document.createElement("div"); meta.className = "meta";
       const when = document.createElement("span"); when.textContent = n.ts ? new Date(n.ts).toLocaleString() : ""; meta.append(when);
-      if (n.uid === me) {
+      if (isMine(n)) {
         const d = document.createElement("button"); d.type = "button"; d.className = "del"; d.textContent = t("del");
         d.addEventListener("click", e => {
           e.stopPropagation();
